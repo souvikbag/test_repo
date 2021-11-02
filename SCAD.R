@@ -9,6 +9,8 @@ library(ncvreg)
 scad_simulation <- function(n,m)
   
 {
+  
+  start.time <- Sys.time()
 
 X_pre = matrix(rnorm(n*m,0,1),nrow = n,ncol = m)
 # Include the Intercept
@@ -84,7 +86,11 @@ errors$Precision <- round(precision,2)
 errors$Recall <- round(recall,2)
 errors$Important <- (m/10)
 
-return(errors)
+end.time <- Sys.time()
+
+time.taken <- round((end.time - start.time),2)
+
+return(list(errors,time.taken))
 
 }
 
