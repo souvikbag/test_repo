@@ -12,6 +12,7 @@ library(glmnet)
 
 sis_simulation <- function(n,m)
 {
+
   X_pre = matrix(rnorm(n*m,0,1),nrow = n,ncol = m)
   ####X should be n*(m+1) matrix
   X <- cbind(1,X_pre)
@@ -58,10 +59,11 @@ sis_simulation <- function(n,m)
   ####Selected variables
   selected <- length(keep_X)
   ##select variables from weighted variables
-  selected1 <- sum(ifelse(as.numeric(substr(keep_X,2,5)) < (m/10 + 1),1,0))
+  selected1 <- sum(ifelse(as.numeric(substr(keep_X,2,5)) <= (m/10),1,0))
   
   
-  betahat <- coef(best_alasso)[2:(m+1)]
+  betahat <- W[2:(m+1)]
+  betahat[is.na(betahat)]<-0
   mse_beta <- (sum((betahat - beta[-1])^2))/n
   mae_beta <- sum(abs(betahat - beta[-1]))/n
   
@@ -90,10 +92,12 @@ sis_simulation <- function(n,m)
   return(errors)
 }
 
-sis_simulation(200,50)
-enet_simulation(200,50)
-lasso_simulation(200,50)
-alasso_simulation(200,50)
+sis_simulation(1000,400)
+
+
+
+
+
 
 
 
