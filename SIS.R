@@ -11,15 +11,17 @@ library(ncvreg)
 library(glmnet)
 
 sis_simulation <- function(n,m)
-{
 
-  X_pre = matrix(rnorm(n*m,0,1),nrow = n,ncol = m)
+ {
+  
+  
+  X = matrix(rnorm(n*m,0,1),nrow = n,ncol = m)
   ####X should be n*(m+1) matrix
-  X <- cbind(1,X_pre)
+
   #####there are 100 regressors, so generate beta values such that 
   #first 10 beta valuesare high and last 90 beta values are very low
-  beta <- numeric(m+1)
-  beta[1:((m/10) + 1)] = runif(((m/10) +1),1,10)
+  beta <- numeric(m)
+  beta[1:((m/10) )] = runif(((m/10)),1,10)
   
   
   ####we get the value of log(p/(1-p)) and errors are taken normal
@@ -28,12 +30,12 @@ sis_simulation <- function(n,m)
   p = exp(logitp)/(1 +exp(logitp) )
   #Using this value of p, we get the binary response variable
   Y <- rbinom(n,1,p)
-  
+
   #####merge X and Y to create one dataframe
   sim_data <- as.data.frame(cbind(Y,X))
   #logit_model <- glm(Y~.,data=sim_data, family = binomial)
   ###alorithm did not converge
-  
+  names(sim_data)[-1] <- paste0('x', 1:(ncol(sim_data)-1))
   ## Train Test split
   training.sample <- sim_data$Y %>% createDataPartition(p = 0.8 , list = FALSE) 
   
@@ -45,31 +47,34 @@ sis_simulation <- function(n,m)
   Y.test <- test.data$Y
   #model matrix
   # Intercept term must not be included
-  X.train <- (model.matrix(Y.train~.,data = train.data))[,-c(1,2,3)]
-  X.test <- model.matrix(Y.test~.,data = test.data)[,-c(1,2,3)]
+  X.train <- (model.matrix(Y.train~.,data = train.data))[,-c(1,2)]
+  X.test <- model.matrix(Y.test~.,data = test.data)[,-c(1,2)]
  # Fit Sure Independence Screening
   X.train = data.matrix(X.train)
-  sis_model <- SIS(X.train,Y.train,family = "binomial", penalty = 'SCAD', varISIS='cons',)
+  sis_model <- SIS(X.train,Y.train,family = "binomial", penalty = 'MCP',)
   ## Selecting Important variables
-  sis_model
-  
-  W <- as.matrix(sis_model$coef.est)
-  keep_X <- rownames(W)[W!=0]
+  #sis_model
+  intercept <- as.matrix(sis_model$coef.est)[1,]
+ intercept = as.numeric(intercept)
+  W <-as.matrix( sis_model$coef.est)
+  keep_X <- rownames(W)
   keep_X <- keep_X[!keep_X == "(Intercept)"]
   ####Selected variables
   selected <- length(keep_X)
   ##select variables from weighted variables
   selected1 <- sum(ifelse(as.numeric(substr(keep_X,2,5)) <= (m/10),1,0))
+  a<- c(as.numeric(substr(keep_X,2,5)))
   
+ 
   
-  betahat <- W[2:(m+1)]
-  betahat[is.na(betahat)]<-0
-  mse_beta <- (sum((betahat - beta[-1])^2))/n
-  mae_beta <- sum(abs(betahat - beta[-1]))/n
+  betahat <- numeric(m)
+  betahat[a] = W[rownames = keep_X,]
+  mse_beta <- (sum((betahat - beta)^2))/n
+  mae_beta <- sum(abs(betahat - beta))/n
   
   ## Prediction and performance of model with test data
   
-  prediction <- predict(sis_model$fit, X.test, lambda = sis_model$lambda, type = 'response')
+  prediction <- intercept + X.test %*% betahat
   
   pred1<- ifelse(prediction > 0.5 , 1, 0)
   cm <- table(Predicted = pred1, Actual = Y.test)
@@ -92,7 +97,8 @@ sis_simulation <- function(n,m)
   return(errors)
 }
 
-sis_simulation(1000,400)
+sis_simulation(100,2000)
+
 
 
 
