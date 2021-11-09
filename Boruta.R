@@ -58,6 +58,10 @@ boruta_simulation <- function(n,m)
   rfimp <- randomForest(varimp,Y.test)
   
   cm <- table(Predicted = rfimp$predicted, Actual = Y.test)
+  miscla <- 1 - (sum(diag(cm))/sum(cm))
+  precision <- cm[1,1]/(cm[1,1]+cm[1,2])
+  recall <- cm[1,1]/(cm[1,1]+cm[2,1])
+  ##error frame
   
   # Time taken
   stop <- Sys.time()
